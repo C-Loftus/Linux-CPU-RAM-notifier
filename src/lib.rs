@@ -1,5 +1,8 @@
 use std::{fs, error::Error, env};
 
+extern crate systemstat;
+use systemstat::{System, Platform};
+
 impl Config {
     pub fn new(args: &[String]) -> Result<Config, &str> {
         let mut monitor_ram = false;
@@ -27,13 +30,30 @@ pub struct Config {
     pub monitor_cpu: bool,
 }
 
-pub fn get_ram() -> u32 {
-    let contents = fs::read_to_string(filename)
-    .expect("Something went wrong reading the file");
-    0
+pub struct MemData {
+    pub total: u64,
+    pub free: u64,
+}
+
+pub fn get_ram() -> MemData {
+    let sys = System::new();
+    
+    let output = match sys.memory().unwrap() {
+        Ok(mem) => MemData {total : systemstat::data::
+            ByteSize::gb(mem.total.as_u64()).as_u64(), 
+            free: (systemstat::data::ByteSize::gb
+                (mem.free.as_u64())).as_u64() },
+
+        Err(x) => {
+            MemData { total : 0, free : 0};
+            eprintln!("Error Getting Memory");
+            }
+        }
+    output 
     }
 
 pub fn get_cpu() -> u32 {
+    let sys = System::new();
     0
     }
 
@@ -49,6 +69,14 @@ mod tests {
             };
         assert_eq!(test.monitor_ram, Config::new(&args).unwrap().monitor_ram);
     }
+
+    #[test]
+    fn valid_file() {
+        get_ram();
+        ()
+
+    }
+
 }
 
 //     #[test]

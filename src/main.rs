@@ -3,6 +3,8 @@ use std::{env, process, thread};
 mod lib;
 use lib::Config;
 use std::time::Duration;
+pub use systemstat::platform::Platform;
+
 
 
 fn main() {
@@ -20,6 +22,7 @@ fn main() {
     let n = libnotify::Notification::new("Summary",
                                          Some("Optional Body"),
                                          None);
+
     // Show the notification
     n.show().unwrap();
     thread::sleep(Duration::from_millis(4000));

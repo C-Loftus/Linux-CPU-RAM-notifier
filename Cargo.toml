@@ -9,3 +9,4 @@ edition = "2018"
 #sudo apt-get intall gnome-dev libnotify-dev
 [dependencies]
 libnotify = "1.0.3"
+systemstat = "0.1.7"
