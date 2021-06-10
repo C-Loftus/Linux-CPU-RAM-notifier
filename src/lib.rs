@@ -1,4 +1,4 @@
-use std::{fs, error::Error, env};
+use std::{fs, error::Error, env, thread, time::Duration};
 
 extern crate systemstat;
 use systemstat::{System, Platform};
@@ -19,7 +19,6 @@ impl Config {
                 monitor_cpu = true;
             }
         }
-
         return Ok(Config {monitor_ram, monitor_cpu})
     }
 }
@@ -35,26 +34,64 @@ pub struct MemData {
     pub free: u64,
 }
 
+pub struct CpuData {
+    // percent out of 100%
+    pub user  : u8,
+    pub nice  : u8,
+    pub system  : u8,
+    pub interrupt : u8,
+    pub idle  : u8,
+}
+
 pub fn get_ram() -> MemData {
     let sys = System::new();
     
-    let output = match sys.memory().unwrap() {
-        Ok(mem) => MemData {total : systemstat::data::
+    let output = match sys.memory() {
+        Ok(mem) => MemData {
+            // gets the total and converts it into a gigabyte value
+            total : systemstat::data::
             ByteSize::gb(mem.total.as_u64()).as_u64(), 
-            free: (systemstat::data::ByteSize::gb
-                (mem.free.as_u64())).as_u64() },
 
-        Err(x) => {
-            MemData { total : 0, free : 0};
-            eprintln!("Error Getting Memory");
+            // gets the free amount and converts into as gigabyte value
+            free: (systemstat::data::ByteSize::gb
+                (mem.free.as_u64())).as_u64() 
+                },
+        Err(mem) => {
+            eprintln!("\nError Getting Memory: {}", mem);
+            MemData { total : 0, free : 0}
             }
-        }
+        };
     output 
     }
 
-pub fn get_cpu() -> u32 {
+pub fn get_cpu() -> CpuData {
     let sys = System::new();
-    0
+    
+    let output = match sys.cpu_load_aggregate() {
+        Ok(cpu)=> {
+            // Measuring CPU load
+            thread::sleep(Duration::from_secs(1));
+            let cpu = cpu.done().unwrap();
+            CpuData {
+                user      : (cpu.user      as u8) * 100,
+                nice      : (cpu.nice      as u8) * 100,
+                system    : (cpu.system    as u8) * 100,
+                interrupt : (cpu.interrupt as u8) * 100,
+                idle      : (cpu.idle      as u8) * 100,
+            }
+        },
+        Err(x) =>  {
+            eprintln!("\nCPU load: error: {}", x);
+                CpuData {
+                user      : 0,
+                nice      : 0,
+                system    : 0,
+                interrupt : 0,
+                idle      : 0,
+                }
+            }
+        };
+        output
     }
 
 
@@ -63,7 +100,9 @@ mod tests {
     use super::*;
     #[test]
     fn valid_config() {
-        let args = vec!["temp first arg, usually will be executable".to_string(), "-r".to_string(), "-c".to_string()];
+        let args = vec!["temp first arg, usually will be the file executable".to_string(), 
+                        "-r".to_string(), 
+                        "-c".to_string()];
         let test = Config { monitor_ram: true,
              monitor_cpu: true
             };
@@ -72,25 +111,56 @@ mod tests {
 
     #[test]
     fn valid_file() {
-        get_ram();
+        let output = get_ram();
+        println!("{}", output.total);
         ()
-
     }
 
+    #[test]
+    fn valid_ram() {
+        get_ram();
+        ()
+    }
+
+    #[test]
+    fn valid_cpu() {
+        get_cpu();
+        ()
+    }
+    #[test]
+    fn create_cpu_notif() {
+    let display : CpuData = get_cpu();
+    libnotify::init("myapp").unwrap();
+    let output_user = display.user.to_string();
+    // Init libnotify
+    // Create a new notification (doesn't show it yet)
+    let n = libnotify::Notification::new(&output_user[..],
+                                         Some(""),
+                                         None);
+
+    // Show the notification
+    n.show().unwrap();
+    libnotify::uninit();
+    }
+
+    #[test]
+    fn create_ram_notif() {
+    let display : MemData = get_ram();
+    libnotify::init("myapp").unwrap();
+    let output_user = display.total.to_string();
+    // Init libnotify
+    // Create a new notification (doesn't show it yet)
+    let message = String::from("There are : ") + &output_user + &String::from(" bytes of RAM in use");
+
+    let n = libnotify::Notification::new(&message[..],
+                                         Some(""),
+                                         None);
+
+    // Show the notification
+    n.show().unwrap();
+    libnotify::uninit();
+    }
+
+    
+
 }
-
-//     #[test]
-//     fn case_insensitive() {
-//         let query = "rUsT";
-//         let contents = "\
-// Rust:
-// safe, fast, productive.
-// Pick three.
-// Trust me.";
-
-//         assert_eq!(
-//             vec!["Rust:", "Trust me."],
-//             search_case_insensitive(query, contents)
-//         );
-//     }
-// }

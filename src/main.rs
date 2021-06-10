@@ -3,7 +3,6 @@ use std::{env, process, thread};
 mod lib;
 use lib::Config;
 use std::time::Duration;
-pub use systemstat::platform::Platform;
 
 
 
