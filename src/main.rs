@@ -14,33 +14,26 @@ fn main() {
         process::exit(1);
     });
 
+    libnotify::init("myapp").unwrap();
     loop {
+        let mut message = String::from("You are currently using : ");
         if config.monitor_cpu {
-            let output : CpuData = get_cpu();
+            let output = CpuData::get_cpu();
+            let percent = CpuData::calc_output_percentage(output);
+            message.push_str(&percent.to_string());
         }
         if config.monitor_ram {
-
+            message.push_str(" and ");
+            let mem_output = MemData::get_ram();
+            message.push_str(&mem_output.total.to_string());
         }
+        let n = libnotify::Notification::new(&message,
+        Some("Optional Body"),
+        None);
+        n.show().unwrap();
+        thread::sleep(Duration::from_millis(4000));
 
     }
-
-    libnotify::init("myapp").unwrap();
-
+    libnotify::uninit();
 }
 
-
-    // // Init libnotify
-    // // Create a new notification (doesn't show it yet)
-    // let n = libnotify::Notification::new("Summary",
-    //                                      Some("Optional Body"),
-    //                                      None);
-
-    // // Show the notification
-    // n.show().unwrap();
-    // thread::sleep(Duration::from_millis(4000));
-    // // Update the existent notification
-    // n.update("I am another notification", None, None).unwrap();
-    // // Show the updated notification
-    // n.show().unwrap();
-    // // We are done, deinit
-    // libnotify::uninit();

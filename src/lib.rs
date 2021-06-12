@@ -65,7 +65,6 @@ impl MemData {
 }
 
 pub struct CpuData {
-    // percent out of 100%
     pub user  : u8,
     pub nice  : u8,
     pub system  : u8,
@@ -77,14 +76,27 @@ impl CpuData {
     fn new (user  : u8, nice  : u8, system  : u8, interrupt : u8, idle  : u8) -> CpuData {
         CpuData {user : user, nice : nice, system : system, interrupt: interrupt, idle: idle } 
     }
-
-    fn convert_to_percentage (input : &mut CpuData) -> &mut CpuData {
-        input.user      = input.user * 0u8;
-        // input.nice      : 100,
-        // input.system    : 100,
-        // input.interrupt : 100,
-        // input.idle      : 100,
+    // convers the decimal to percentage for easier viewing
+    pub fn convert_each_percentage (input : &mut CpuData) -> &mut CpuData {
+        input.user      = input.user * 100;
+        input.nice      = input.nice * 100;
+        input.system    = input.system * 100;
+        input.interrupt = input.interrupt * 100;
+        input.idle      =  input.idle * 100;
         input
+    }
+
+    // changes the cpu data from user/nice/system/interrupt/idle to 
+    // a clean percentage
+    pub fn calc_output_percentage (mut input: CpuData) -> u8 {
+        if input.idle < 1 {
+            CpuData::convert_each_percentage(&mut input);
+        }
+
+        let nonidle = input.nice + input.user + input.system;
+        let total = input.idle + nonidle;
+        let percentage = (total - input.idle) / total;
+        percentage
     }
 
     pub fn get_cpu() -> CpuData {
@@ -95,14 +107,13 @@ impl CpuData {
                 // Measuring CPU load
                 thread::sleep(Duration::from_secs(1));
                 let cpu = cpu.done().unwrap();
-                CpuData {
-                    user      : (cpu.user      as u8) * 100,
-                    nice      : (cpu.nice      as u8) * 100,
-                    system    : (cpu.system    as u8) * 100,
-                    interrupt : (cpu.interrupt as u8) * 100,
-                    idle      : (cpu.idle      as u8) * 100,
-                }
-            },
+                CpuData::new(cpu.user      as u8,
+                            cpu.nice       as u8,  
+                            cpu.system     as u8, 
+                            cpu.interrupt  as u8, 
+                            cpu.idle       as u8,
+                            )
+            }
             Err(x) =>  {
                 eprintln!("\nCPU load: error: {}", x);
                     CpuData {
@@ -123,6 +134,7 @@ impl CpuData {
 mod tests {
     use super::*;
     #[test]
+    //  tests if the config outputs that it should monitor both ram and cpu
     fn valid_config() {
         let args = vec!["temp first arg, usually will be the file executable".to_string(), 
                         "-r".to_string(), 
@@ -169,7 +181,7 @@ mod tests {
 
     #[test]
     fn create_ram_notif() {
-    let display : MemData = get_ram();
+    let display : MemData = MemData::get_ram();
     libnotify::init("myapp").unwrap();
     let output_user = display.total.to_string();
     // Init libnotify
