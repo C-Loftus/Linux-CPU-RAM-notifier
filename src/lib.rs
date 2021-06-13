@@ -10,12 +10,12 @@ impl Config {
         if args.len() < 2 {
             return Err("User did not specify what to monitor");
         }
-        let length = args.len() - 1;
+        let length = args.len();
         for i in 0..length {
-            if args[i] == "-r" {
+            if args[i] == "r" {
                 monitor_ram = true;
             }
-            if args[i] == "-c" {
+            if args[i] == "c" {
                 monitor_cpu = true;
             }
         }
@@ -95,7 +95,10 @@ impl CpuData {
 
         let nonidle = input.nice + input.user + input.system;
         let total = input.idle + nonidle;
-        let percentage = (total - input.idle) / total;
+        let mut percentage = 0;
+        if total != 0 {
+            percentage = (total - input.idle) / total;
+        }
         percentage
     }
 

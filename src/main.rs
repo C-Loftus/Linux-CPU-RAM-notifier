@@ -16,19 +16,24 @@ fn main() {
 
     libnotify::init("myapp").unwrap();
     loop {
-        let mut message = String::from("You are currently using : ");
+        let cpu_message = String::from("User didn't specify to track CPU");
         if config.monitor_cpu {
+            let mut cpu_message = String::from("You are currently using : ");
             let output = CpuData::get_cpu();
             let percent = CpuData::calc_output_percentage(output);
-            message.push_str(&percent.to_string());
+            cpu_message.push_str(&percent.to_string());
+            cpu_message.push_str(" percent of the cpu");
         }
+        let ram_message = String::from("User didn't specify to track RAM ");
         if config.monitor_ram {
-            message.push_str(" and ");
+            let mut ram_message = String::from("You are current using : ");
+            ram_message.push_str(" and ");
             let mem_output = MemData::get_ram();
-            message.push_str(&mem_output.total.to_string());
+            ram_message.push_str(&mem_output.total.to_string());
+            ram_message.push_str(" bytes of ram");
         }
-        let n = libnotify::Notification::new(&message,
-        Some("Optional Body"),
+        let n = libnotify::Notification::new(&cpu_message,
+        Some(ram_message),
         None);
         n.show().unwrap();
         thread::sleep(Duration::from_millis(4000));
