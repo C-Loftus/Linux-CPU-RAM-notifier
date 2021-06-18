@@ -20,4 +20,4 @@ cargo run -c -r
 The -c and -r specify to track CPU and RAM
 
 # Status / Known Bugs
-Currently this program is in process of development and has been put on halt due to my internship taking priority. There is a known bug with a string trait implementation that causes creation of a notification box to fail in main.rs. That will be fixed soon.
+Currently this program is in process of development due to my internship taking priority. There is a known bug with a string trait implementation that causes creation of a notification box to fail in main.rs. That will be fixed soon.
